@@ -1,6 +1,6 @@
 import express from 'express';
 
-const app = express();
+export const app = express();
 const port = 3000;
 
 const jsonBodyMidleware = express.json();
@@ -47,6 +47,12 @@ app.delete('/figures/:id', (req, res)=>{
 });
 
 app.post('/figures', (req, res)=>{
+
+    if(!req.body.name){
+        res.sendStatus(400);
+        return;
+    }
+
     const createdFigures = {
         id: +(new Date()),
         name: req.body.name
@@ -74,6 +80,11 @@ app.put('/figures/:id', (req, res)=>{
 
     res.sendStatus(204);
 
+});
+
+app.delete('/__test__/delete', (req, res)=>{
+    db.figures = [];
+    res.sendStatus(204);
 });
 
  

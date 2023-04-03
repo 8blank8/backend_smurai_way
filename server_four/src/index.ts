@@ -1,4 +1,10 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
+import { RequestWithBody, RequestWithParams, RequestWithParamsAndBody, RequestWithQuery } from './types';
+import { FigureCreateModal } from './models/FigureCreateModel';
+import { FigureUpdateModal } from './models/FigureUpdateModal';
+import { FigureQueryModal } from './models/GetFigureQueryModal';
+import { FigureApiModal } from './models/FigureApiModal';
+import { FigureUriParamsIdModel } from './models/FigureUriParamsIdModae';
 
 export const app = express();
 const port = 3000;
@@ -6,27 +12,42 @@ const port = 3000;
 const jsonBodyMidleware = express.json();
 app.use(jsonBodyMidleware);
 
-let db = {
+type FiguresType ={
+    id: number,
+    name: string,
+    size: number
+}
+
+let db: {figures: FiguresType[]} = {
     figures:[
-        {id: 1, name: 'circle'},
-        {id: 2, name: 'oval'},
-        {id: 3, name: 'rectangle'},
-        {id: 4, name: 'triangle'}
+        {id: 1, name: 'circle', size: 10},
+        {id: 2, name: 'oval', size: 10},
+        {id: 3, name: 'rectangle', size: 10},
+        {id: 4, name: 'triangle', size: 10}
     ]
 }
 
-app.get('/figures', (req, res)=>{
+const getFigureApiModel = (figures: FiguresType): FigureApiModal =>{
+    return {
+            id: figures.id,
+            name: figures.name
+    };
+}
+
+app.get('/figures', (req: RequestWithQuery<FigureQueryModal>, 
+                    res: Response<FigureApiModal[]>)=>{
     let figures = db.figures
 
     if(req.query.name){
-        figures = figures.filter(item=> item.name.indexOf(req.query.name as string) > -1);
+        figures = figures.filter(item=> item.name.indexOf(req.query.name) > -1);
     }
 
-    res.json(figures);
+    res.json(figures.map(getFigureApiModel));
 
 });
 
-app.get('/figures/:id', (req, res)=>{
+app.get('/figures/:id', (req: RequestWithParams<FigureUriParamsIdModel>, 
+                         res: Response<FigureApiModal>)=>{
     const item = db.figures.find(item => item.id === +req.params.id);
 
     if(!item){
@@ -34,11 +55,11 @@ app.get('/figures/:id', (req, res)=>{
         return;
     }
 
-    res.json(item);
+    res.json(getFigureApiModel(item));
 
 });
 
-app.delete('/figures/:id', (req, res)=>{
+app.delete('/figures/:id', (req: RequestWithParams<FigureUriParamsIdModel>, res)=>{
     db.figures = db.figures.filter(item => item.id !== +req.params.id);
 
 
@@ -46,23 +67,25 @@ app.delete('/figures/:id', (req, res)=>{
 
 });
 
-app.post('/figures', (req, res)=>{
+app.post('/figures', (req: RequestWithBody<FigureCreateModal>, 
+                      res: Response<FigureApiModal>)=>{
 
     if(!req.body.name){
         res.sendStatus(400);
         return;
     }
 
-    const createdFigures = {
+    const createdFigures: FiguresType = {
         id: +(new Date()),
-        name: req.body.name
+        name: req.body.name,
+        size: 0
     }
     db.figures.push(createdFigures);
 
-    res.status(201).json(createdFigures);
+    res.status(201).json(getFigureApiModel(createdFigures));
 });
 
-app.put('/figures/:id', (req, res)=>{
+app.put('/figures/:id', (req: RequestWithParamsAndBody<FigureUriParamsIdModel, FigureUpdateModal>, res)=>{
     if(!req.body.name){
         res.sendStatus(400);
         return;
